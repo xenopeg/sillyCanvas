@@ -12,51 +12,39 @@ var bandwidth = {
 
 
 function handler(req, res) {
-  if(req.url.toLowerCase() == '/index.html' || req.url.toLowerCase() == '/'){
-    fs.readFile(__dirname + '/index.html',
-    function (err, data) {
-      if (err) {
-        res.writeHead(500);
-        return res.end('Error loading index.html');
+  var link = req.url.split('/');
+  console.log(link[1]);
+  var content;
+  switch(link[1]){
+    case 'sillyCanvas.js':
+      content = fs.readFileSync('sillyCanvas.js').toString();
+      res.writeHead(200, {'Content-Type': 'application/javascript'});
+      break;
+    case 'imgs':
+      switch(link[2]){        
+        case 'eraser.png':
+          content = fs.readFileSync('imgs/eraser.png');
+          res.writeHead(200, {'Content-Type': 'image/png'});
+          break;
+        case 'pencil.png':
+          content = fs.readFileSync('imgs/pencil.png');
+          res.writeHead(200, {'Content-Type': 'image/png'});
+          break;
+        default:
+          content = '';
+          res.writeHead(404);
+          break;
       }
-      res.writeHead(200);
-      res.end(data);
-    });
-  }else if(req.url.toLowerCase().indexOf('/p.js') >= 0){
-    fs.readFile(__dirname + '/p.js',
-    function (err, data) {
-      if (err) {
-        res.writeHead(500);
-        return res.end('Error loading p.js');
-      }
-      res.writeHead(200);
-      res.end(data);
-    });
-  }else if(req.url.toLowerCase().indexOf('/imgs/pencil.png') >= 0){
-    fs.readFile(__dirname + '/imgs/pencil.png',
-    function (err, data) {
-      if (err) {
-        res.writeHead(500);
-        return res.end('Error loading pencil.png');
-      }
-      res.writeHead(200);
-      res.end(data);
-    });
-  }else if(req.url.toLowerCase().indexOf('/imgs/eraser.png') >= 0){
-    fs.readFile(__dirname + '/imgs/eraser.png',
-    function (err, data) {
-      if (err) {
-        res.writeHead(500);
-        return res.end('Error loading eraser.png');
-      }
-      res.writeHead(200);
-      res.end(data);
-    });
-  }else{
-    res.writeHead(404);
-    res.end();
+      break;    
+    default:
+      content = fs.readFileSync('index.html').toString();
+      res.writeHead(200, {'Content-Type': 'text/html'});
+      break;
   }
+  res.end(content);
 }
+
+
 
 io.sockets.on('connection', function(socket){
   var time = Date.now();
