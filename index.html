@@ -1,0 +1,17 @@
+<html>
+  <head>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+    <script src="./socket.io/socket.io.js"></script>
+    <script src="./p.js"></script>
+    <script>
+      $(function(){
+        $('#booper').click(function(){$(this).hide();new sillyCanvas($('#boop'),'127.0.0.1:8384');});
+      });
+    </script>
+  </head>
+  <body>
+    <div id="boop" style="width:800px;height:600px;background-color:#330633">
+    </div>
+    <button id="booper">Create Overlay</button>
+  </body>
+</html>
