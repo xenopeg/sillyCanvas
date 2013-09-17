@@ -54,38 +54,92 @@ function sillyCanvas(elm, sok){
     img.src = uri;
   }        
 
-  function ToolBelt(cntx){
+  function ToolBelt(cntx, belt){
     var context = cntx;
     var _this = this;
     var tools = {};
     var toolList = [];
     var currentTool;
+    var belt = belt;
+    var poinTmpCanvas = document.createElement('canvas');        
+        poinTmpCanvas.width = 14;
+        poinTmpCanvas.height = 14;
+    var poinTmpCntx = poinTmpCanvas.getContext('2d');
+    
     
     function getCurrent(){
       return currentTool;
     };this.getCurrent = getCurrent;
     
     function addTool(id, name, tool){
+    
+    
+    /////////////////////
+    
+      poinTmpCntx.globalCompositeOperation = 'source-over';
+      poinTmpCntx.clearRect( 0 , 0 , poinTmpCanvas.width , poinTmpCanvas.height );
+      poinTmpCntx.rect( 0 , 0 , poinTmpCanvas.width , poinTmpCanvas.height );
+      poinTmpCntx.fillStyle="#BBBBBB";
+      poinTmpCntx.fill();
+      var opts = tool.getOpts();
+      /*
+      var tmpComp = opts.globalCompositeOperation;
+      opts.globalCompositeOperation = 'source-over';
+      */
+      tool.pushContext(poinTmpCntx);
+      tool.start(7,7);
+      tool.stop(7,7); 
+      tool.popContext();
+      
+     // var tmpComp = opts.globalCompositeOperation;
+      
+      var imguri = poinTmpCanvas.toDataURL();
+    /////////////////////
+      var html = 
+          '<div class="belt_item">'
+        + '</div>';
+      
+      var img = document.createElement('img');
+      img.id = id;
+      img.src = imguri;
+
       tools[id] = {};
       tools[id].name = name;
       tools[id].tool = tool;
+      tools[id].node = $(html).appendTo(belt).append(img);
       toolList.push(id);
       if(toolList.length > 10){
-        delete tools[toolList.unshift()];
+        var old = tools[toolList.shift()];
+        old.node.remove();
+        delete tools[old.id];
       }
       currentTool = (id);
     };this.addTool = addTool;
         
     function pickTool(id){
+      var opts;
       toolList.push(toolList.splice(toolList.indexOf(id),1)[0]);
       currentTool = (id);
+      
+      console.log(tools[id]);
+      opts = tools[id].tool.getOpts();
+      tools[id].node.detach().appendTo(belt);
+      setColorPicker(opts.fillStyle);
+      $('#option_sizepick').val(opts.lineWidth);
+      if(opts.globalCompositeOperation === 'source-over'){
+        $('.tool').removeClass('selected');
+        $('#tool_pencil').addClass('selected');        
+      }else{
+        $('.tool').removeClass('selected');
+        $('#tool_eraser').addClass('selected');      
+      }
+      //set pickers
     };this.pickTool = pickTool;
     
-    this.popTool =
     function popTool(){
       toolList.pop();
       currentTool = (toolList[toolList.length-1].id);
-    }
+    };this.popTool = popTool;
     
     this.handler =
     function handler(ev){
@@ -124,6 +178,17 @@ function sillyCanvas(elm, sok){
     var time;
     var lastUpd = 0;
     var drawInterval = untimed ? 0 : 10;
+    var contexts = [];
+    
+    this.pushContext =
+    function pushContext(cntx){
+      contexts.push(context);
+      context = cntx;
+    }
+    this.popContext =
+    function popContext(cntx){
+      context = contexts.pop();
+    }
     
     this.getOpts =
     function getOpts(){
@@ -211,26 +276,25 @@ function sillyCanvas(elm, sok){
     }
   }
   
-  var sok = sok;
-  var $elm = $(elm);
-  var width = $elm.width()-22;
-  var height = $elm.height()-34;
-  var node = document.createElement('div');
-  var $node = $(node);
-  var socket;
-  var link;
-  var css; 
-  var html;
-  var colors; 
-  var tmpCanvas;
-  var tmpContext;
-  var canvas;
-  var context;
-  var tools;
-  var socket;
-  
-  
-  
+  var sok = sok
+    , $elm = $(elm)
+    , width = $elm.width()-22
+    , height = $elm.height()-34
+    , node = document.createElement('div')
+    , $node = $(node)
+    , socket
+    , link
+    , css
+    , html
+    , colors
+    , tmpCanvas
+    , tmpContext
+    , canvas
+    , context
+    , tools
+    , socket
+    ;
+    
   if(sok){
     if(sok.indexOf('http://') === 0){
       link = sok+(sok[sok.length-1]==='/'?(''):('/'))
@@ -287,6 +351,9 @@ function sillyCanvas(elm, sok){
     + '}'
     + '.tool{'
     + '  padding: 1px;margin: 3px;width:22px;height:22px;float:left;display: inline-block;border-width: 1px;border-style: solid; border-color: black;'
+    + '}'
+    + '.belt_item{'
+    + '  border-width: 1px;border-style: solid; border-color: black;'
     + '}'
     + '.option{'
     + '  padding: 1px;height:24px;width:40px;float:left;display: inline-block;border-width: 1px;border-style: solid;border-color: black;'
@@ -405,6 +472,11 @@ function sillyCanvas(elm, sok){
     })
   ;
     
+  $('#toolbelt').on('click', '.belt_item *', function(){
+    console.log(this);
+    tools.pickTool(this.id);
+  });
+    
   if(typeof $().spectrum != 'undefined' ) {
     $("#option_colorpick").spectrum({
       preferredFormat: "hex6",
@@ -451,7 +523,7 @@ function sillyCanvas(elm, sok){
 
   canvas = $('#drawarea')[0];
   context = canvas.getContext('2d');
-  tools = new ToolBelt(context);
+  tools = new ToolBelt(context, $('#toolbelt'));
   tools.addTool(
     1,
     'pencil',
@@ -462,20 +534,6 @@ function sillyCanvas(elm, sok){
         fillStyle: '#000000',
         strokeStyle: '#000000',
         lineWidth: 3,
-        lineCap : 'round'
-      }
-    )
-  );
-  tools.addTool(
-    2,
-    'eraser',
-    new Pencil(
-      context, 
-      {
-        globalCompositeOperation:"destination-out",
-        fillStyle: '#FFFFFF',
-        strokeStyle: '#FFFFFF',
-        lineWidth:10,
         lineCap : 'round'
       }
     )
