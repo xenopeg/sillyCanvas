@@ -30,6 +30,22 @@ function handler(req, res) {
           content = fs.readFileSync('imgs/pencil.png');
           res.writeHead(200, {'Content-Type': 'image/png'});
           break;
+        case 'item_remove.png':
+          content = fs.readFileSync('imgs/item_remove.png');
+          res.writeHead(200, {'Content-Type': 'image/png'});
+          break;
+        case 'item_open.png':
+          content = fs.readFileSync('imgs/item_open.png');
+          res.writeHead(200, {'Content-Type': 'image/png'});
+          break;
+        case 'export_save.png':
+          content = fs.readFileSync('imgs/export_save.png');
+          res.writeHead(200, {'Content-Type': 'image/png'});
+          break;
+        case 'export_close.png':
+          content = fs.readFileSync('imgs/export_close.png');
+          res.writeHead(200, {'Content-Type': 'image/png'});
+          break;
         default:
           content = '';
           res.writeHead(404);

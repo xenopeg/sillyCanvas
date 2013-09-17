@@ -43,6 +43,7 @@
 })()
 function sillyCanvas(elm, sok){
   var sok = sok;
+  
   function loadURItoCanvas(context, uri){
     var img = new Image;
     img.onload = function(){
@@ -62,12 +63,10 @@ function sillyCanvas(elm, sok){
     var toolList = [];
     var currentTool;
     
-    this.getCurrent =
     function getCurrent(){
       return currentTool;
-    }
+    };this.getCurrent = getCurrent;
     
-    this.addTool = 
     function addTool(id, name, tool){
       tools[id] = {};
       tools[id].name = name;
@@ -77,13 +76,12 @@ function sillyCanvas(elm, sok){
         delete tools[toolList.unshift()];
       }
       currentTool = (id);
-    }
-    
-    this.pickTool =
+    };this.addTool = addTool;
+        
     function pickTool(id){
       toolList.push(toolList.splice(toolList.indexOf(id),1)[0]);
       currentTool = (id);
-    }
+    };this.pickTool = pickTool;
     
     this.popTool =
     function popTool(){
@@ -187,14 +185,18 @@ function sillyCanvas(elm, sok){
     }
     this.handler = 
     function(ev){ 
+      if(ev.type === 'contextmenu' && ev.button === 2){
+        ev.preventDefault();
+        $('#exports').show();
+        return false;
+      }
+      if(ev.button === 2)return;
       var offsetX = ev.offsetX || ( ev.pageX - $(ev.target).offset().left );
       var offsetY = ev.offsetY || ( ev.pageY - $(ev.target).offset().top );
-      if(ev.button === 2)return;
       switch(ev.type){
         case 'mousedown':
           _this.start(offsetX,offsetY);
           ev.preventDefault();
-          //ev.stopPropagation()
           break;
         case 'mouseleave':
         case 'mousemove':
@@ -249,6 +251,42 @@ function sillyCanvas(elm, sok){
     + '#drawarea{'
     + '  width:'+width+'px;height:'+height+'px;'
     + '}'
+    + '#exports{'
+    + '  width:100%;height:100%;position:absolute;top:0px;background-color:rgba(70,70,70,0.7);overflow:hidden;display:none;'
+    + '}'
+    + '#exports_menu{'
+    + '  width:100%;height:30px;position:absolute;background-color:rgba(40,40,40,0.7);'
+    + '}'
+    + '#exports_list{'
+    + '  width:100%;position:absolute;top:30px;'
+    + '}'
+    + '.exports_btn{'
+    + '  margin:3px;width:24px;height:24px;float:right;border:1px solid black;'
+    + '}'
+    + '.export_item{'
+    + '  margin:5px;float:left;background-color:rgba(150,150,150,0.7);'
+    + '}'
+    + '.export_img{'
+    + '  width:150px;margin:5px;'
+    + '}'
+    + '.export_rem{'
+    + '  background-image: url('+link+'imgs/item_remove.png);'
+    + '}'
+    + '.export_pop{'
+    + '  background-image: url('+link+'imgs/item_open.png);'
+    + '}'
+    + '#new_exports{'
+    + '  background-image: url('+link+'imgs/export_save.png);'
+    + '}'
+    + '#close_exports{'
+    + '  background-image: url('+link+'imgs/export_close.png);'
+    + '}'
+    + '.export_item_menu{'
+    + '  height:20px;background-color:rgba(70,70,70,0.7);'
+    + '}'
+    + '.export_item_menu button{'
+    + '  float: right;height:16px;width:16px;border:none;background-color:transparent;margin:2px;'
+    + '}'
     + '.tool{'
     + '  padding: 1px;margin: 3px;width:22px;height:22px;float:left;display: inline-block;border-width: 1px;border-style: solid; border-color: black;'
     + '}'
@@ -297,7 +335,7 @@ function sillyCanvas(elm, sok){
     + '        <input class="option" id="option_sizepick" type="number" value="2" />'
     + '      </div>'
     + '      <div id="paintrange" style="margin:2px;float:left;height:12px;display:inline-block;">'
-    + '        <input type="range" min="1" max="100" value="2" style="width:100px;" />'
+    + '        <input type="range" min="1" max="200" value="2" style="width:100px;" />'
     + '      </div>'
     + '      <input id="overlayalpha" type="range" min="0" max="50" value="0" style="width:100px;" />'
     + '    </div>'
@@ -309,6 +347,16 @@ function sillyCanvas(elm, sok){
     + '  </div>'
     + '  <button id="drawtoggle" style="background-color:#DDDDDD;width:18px;height:18px;border:2px solid black;position:absolute;bottom:0px;right:0px">-'
     + '  </button>'
+    + '  <div id="exports">'
+    + '    <div id="exports_menu">'
+    + '      <button id="close_exports" class="exports_btn">'
+    + '      </button>'
+    + '      <button id="new_exports" class="exports_btn">'
+    + '      </button>'
+    + '    </div>'
+    + '    <div id="exports_list">'
+    + '    </div>'
+    + '  </div>'
     + '</div>';
     
   var colors = [
@@ -332,6 +380,33 @@ function sillyCanvas(elm, sok){
 
   $node.html(html);
 
+  $('#exports')
+    .on('click', '#new_exports', function(){
+      var html =
+          '<div class="export_item">'
+        + '  <img class="export_img" />'
+        + '  <div class="export_item_menu">'
+        + '    <button class="export_rem"></button>'
+        + '    <button class="export_pop"></button>'
+        + '  </div>'
+        + '</div>';
+      $(html).appendTo('#exports_list').find('.export_img')[0].src = canvas.toDataURL();
+      //addnew
+    })
+    .on('click', '#close_exports', function(){
+      //#exports hide
+      $(this).parent().parent().hide();
+    })
+    .on('click', '.export_pop', function(){
+      //window.pop img
+      window.open($(this).parent().parent().children('img')[0].src);
+    })
+    .on('click', '.export_rem', function(){
+      //find export_item remove
+      $(this).parent().parent().remove();
+    })
+  ;
+    
   if(typeof $().spectrum != 'undefined' ) {
     $("#option_colorpick").spectrum({
       preferredFormat: "hex6",
@@ -359,7 +434,7 @@ function sillyCanvas(elm, sok){
     'width': Math.ceil(colors.length/2)*12+'px'
   });  
   $('#paintrange > input').change(function(ev){
-    $('#option_sizepick').val($(this).val());
+    $('#option_sizepick').val(~~Math.exp((Math.log(400))/(200-1)*($(this).val()-1)));
   });
   $('#overlayalpha').change(function(ev){
     $('#drawcontainer').css({
@@ -376,7 +451,7 @@ function sillyCanvas(elm, sok){
   tmpCanvas.height = height;
   var tmpContext = tmpCanvas.getContext('2d');
 
-  canvas = $('#drawarea')[0];
+  var canvas = $('#drawarea')[0];
   var context = canvas.getContext('2d');
   tools = new ToolBelt(context);
   tools.addTool(
@@ -408,17 +483,8 @@ function sillyCanvas(elm, sok){
     )
   );
   tools.pickTool(1);
-  $('#drawarea').on('mousedown mousemove mouseup mouseleave mouseenter', tools.handler);
-
-  $('#drawarea').on('contextmenu',function(ev){
-    if(tools.getCurrent() == 2){
-      tools.pickTool(1);
-    }else{
-      tools.pickTool(2);
-    }
-    ev.preventDefault();
-    return false;
-  });     
+  $('#drawarea').on('mousedown mousemove mouseup mouseleave mouseenter contextmenu', tools.handler);
+   
   
   var socket;
   if(typeof io === 'undefined'){
@@ -491,8 +557,5 @@ function sillyCanvas(elm, sok){
     $('.tool').removeClass('selected');
     $(this).addClass('selected');
   });
-  
-  
-
 };
 
