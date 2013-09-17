@@ -42,8 +42,6 @@
   loadScripts();
 })()
 function sillyCanvas(elm, sok){
-  var sok = sok;
-  
   function loadURItoCanvas(context, uri){
     var img = new Image;
     img.onload = function(){
@@ -145,7 +143,6 @@ function sillyCanvas(elm, sok){
       context.lineTo(x+0.1, y+0.1);
       context.stroke(); 
       context.closePath();   
-      //context.moveTo(x, y);   
       line=[];
       line.push([x,y]);
     }
@@ -153,20 +150,14 @@ function sillyCanvas(elm, sok){
     function move(x,y, nodraw){
       if(!nodraw){
         time = Date.now()
-        if( lastUpd + drawInterval <= time ){     
-        
+        if( lastUpd + drawInterval <= time ){             
           context.beginPath();
-          
-            context.moveTo(line[line.length-1][0], line[line.length-1][1]);  
-          
-            line.push([x,y]);     
-
+            context.moveTo(line[line.length-1][0], line[line.length-1][1]);            
+            line.push([x,y]);    
             context.lineTo(x, y);
             context.stroke();    
-            lastUpd = time;
-            
-          context.closePath();  
-          
+            lastUpd = time;            
+          context.closePath();            
         }
       }else{
         line.push([x,y]);     
@@ -185,11 +176,6 @@ function sillyCanvas(elm, sok){
     }
     this.handler = 
     function(ev){ 
-      if(ev.type === 'contextmenu' && ev.button === 2){
-        ev.preventDefault();
-        $('#exports').show();
-        return false;
-      }
       if(ev.button === 2)return;
       var offsetX = ev.offsetX || ( ev.pageX - $(ev.target).offset().left );
       var offsetY = ev.offsetY || ( ev.pageY - $(ev.target).offset().top );
@@ -224,15 +210,27 @@ function sillyCanvas(elm, sok){
       }
     }
   }
-      
+  
+  var sok = sok;
   var $elm = $(elm);
   var width = $elm.width()-22;
   var height = $elm.height()-34;
   var node = document.createElement('div');
   var $node = $(node);
   var socket;
-  
   var link;
+  var css; 
+  var html;
+  var colors; 
+  var tmpCanvas;
+  var tmpContext;
+  var canvas;
+  var context;
+  var tools;
+  var socket;
+  
+  
+  
   if(sok){
     if(sok.indexOf('http://') === 0){
       link = sok+(sok[sok.length-1]==='/'?(''):('/'))
@@ -243,7 +241,7 @@ function sillyCanvas(elm, sok){
     link = './';
   }
     
-  var css 
+  css 
     = '#drawcontainer *{ border-spacing: 0px; -moz-box-sizing: border-box; box-sizing: border-box; padding: 0px;}'
     + '#draw{'
     + '  float: left;border-width: 1px;border-style: solid;border-color: black;width:'+(+width+2)+'px;height:'+(+height+2)+'px;'
@@ -321,7 +319,7 @@ function sillyCanvas(elm, sok){
     + '  cursor: crosshair;'
     + '}';
     
-  var html
+  html
     = '<div id="drawcontainer" style="position:relative;display:block;border:1px solid black;min-width:'+(+width+20)+'px;">'
     + '  <div id="drawthingy" style="display:inline-block;">'
     + '    <div id="toolsettings" style="position:relative;background-color: rgba(200,200,200,0.70);">'
@@ -359,7 +357,7 @@ function sillyCanvas(elm, sok){
     + '  </div>'
     + '</div>';
     
-  var colors = [
+  colors = [
     '000000','DD33D5','4A1096','D6D6D6','FF8132','FFDF2B','44D3ED','192F75','FF0000','00FF1D',
     'FFFFFF','FF82F2','A752D8','E6E6E6','FF9532','FFEF7A','6AE6ED','2C5EFF','F07272','79D484'
   ];  
@@ -446,13 +444,13 @@ function sillyCanvas(elm, sok){
   });
   
   
-  var tmpCanvas = document.createElement('canvas');
+  tmpCanvas = document.createElement('canvas');
   tmpCanvas.width = width;
   tmpCanvas.height = height;
-  var tmpContext = tmpCanvas.getContext('2d');
+  tmpContext = tmpCanvas.getContext('2d');
 
-  var canvas = $('#drawarea')[0];
-  var context = canvas.getContext('2d');
+  canvas = $('#drawarea')[0];
+  context = canvas.getContext('2d');
   tools = new ToolBelt(context);
   tools.addTool(
     1,
@@ -483,17 +481,25 @@ function sillyCanvas(elm, sok){
     )
   );
   tools.pickTool(1);
-  $('#drawarea').on('mousedown mousemove mouseup mouseleave mouseenter contextmenu', tools.handler);
+  $('#drawarea')
+    .on('mousedown mousemove mouseup mouseleave mouseenter', tools.handler)
+    .on('contextmenu',function(ev){
+      if(ev.type === 'contextmenu' && ev.button === 2){
+        ev.preventDefault();
+        $('#exports').show();
+        return false;
+      }    
+    })
+  ;
    
   
-  var socket;
   if(typeof io === 'undefined'){
     var url = link+'socket.io/socket.io.js';
-  
     $.getScript(url,setupSocket);
   }else{
     setupSocket();
   }window.setupSocket = setupSocket;
+  
   function setupSocket(){
     console.log('c:')
     socket = io.connect(sok);    
@@ -508,8 +514,7 @@ function sillyCanvas(elm, sok){
       loadURItoCanvas(context, data);
     });
     
-    socket.on('drawdat', function(data){
-      
+    socket.on('drawdat', function(data){      
       var tmpComp = context.globalCompositeOperation;
       context.globalCompositeOperation = data.tool.globalCompositeOperation;
       data.tool.globalCompositeOperation = 'source-over';
